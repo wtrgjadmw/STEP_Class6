@@ -79,7 +79,7 @@ void my_initialize() {
 // to be a multiple of 8 bytes and meets 8 <= |size| <= 4000. You are not
 // allowed to use any library functions other than mmap_from_system /
 // munmap_to_system.
-void *my_malloc(size_t size) {
+void *first_fit_malloc(size_t size) {
   simple_metadata_t *metadata = simple_heap.free_head;
   simple_metadata_t *prev = NULL;
   // First-fit: Find the first free slot the object fits.
@@ -105,7 +105,7 @@ void *my_malloc(size_t size) {
     // Add the memory region to the free list.
     add_to_free_list(metadata);
     // Now, try simple_malloc() again. This should succeed.
-    return my_malloc(size);
+    return first_fit_malloc(size);
   }
 
   // |ptr| is the beginning of the allocated object.
@@ -134,6 +134,71 @@ void *my_malloc(size_t size) {
     add_to_free_list(new_metadata);
   }
   return ptr;
+}
+
+void *best_fit_malloc(size_t size) {
+  simple_metadata_t *metadata = simple_heap.free_head;
+  simple_metadata_t *prev = NULL;
+  simple_metadata_t *metadata_now = simple_heap.free_head;
+  while (metadata_now->next) {
+    printf("%lu\n", metadata_now->next->size);
+    if (metadata_now->next->size > size && metadata_now->next->size < metadata->size) {
+      prev = metadata_now;
+      metadata = metadata_now->next;
+    }
+    metadata_now = metadata_now->next;
+  }
+
+  if (!metadata) {
+    // There was no free slot available. We need to request a new memory region
+    // from the system by calling mmap_from_system().
+    //
+    //     | metadata | free slot |
+    //     ^
+    //     metadata
+    //     <---------------------->
+    //            buffer_size
+    size_t buffer_size = 4096;
+    simple_metadata_t *metadata =
+        (simple_metadata_t *)mmap_from_system(buffer_size);
+    metadata->size = buffer_size - sizeof(simple_metadata_t);
+    metadata->next = NULL;
+    // Add the memory region to the free list.
+    add_to_free_list(metadata);
+    // Now, try simple_malloc() again. This should succeed.
+    return best_fit_malloc(size);
+  }
+
+  // |ptr| is the beginning of the allocated object.
+  //
+  // ... | metadata | object | ...
+  //     ^          ^
+  //     metadata   ptr
+  void *ptr = metadata + 1;
+  size_t remaining_size = metadata->size - size;
+  metadata->size = size;
+  // Remove the free slot from the free list.
+  remove_from_free_list(metadata, prev);
+
+  if (remaining_size > sizeof(simple_metadata_t)) {
+    // Create a new metadata for the remaining free slot.
+    //
+    // ... | metadata | object | metadata | free slot | ...
+    //     ^          ^        ^
+    //     metadata   ptr      new_metadata
+    //                 <------><---------------------->
+    //                   size       remaining size
+    simple_metadata_t *new_metadata = (simple_metadata_t *)((char *)ptr + size);
+    new_metadata->size = remaining_size - sizeof(simple_metadata_t);
+    new_metadata->next = NULL;
+    // Add the remaining free slot to the free list.
+    add_to_free_list(new_metadata);
+  }
+  return ptr;
+}
+
+void *my_malloc(size_t size) {
+  return first_fit_malloc(size);
 }
 
 // This is called every time an object is freed.  You are not allowed to use
