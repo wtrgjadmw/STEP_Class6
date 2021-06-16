@@ -90,14 +90,6 @@ void *first_fit_malloc(size_t size) {
   }
 
   if (!metadata) {
-    // There was no free slot available. We need to request a new memory region
-    // from the system by calling mmap_from_system().
-    //
-    //     | metadata | free slot |
-    //     ^
-    //     metadata
-    //     <---------------------->
-    //            buffer_size
     size_t buffer_size = 4096;
     simple_metadata_t *metadata =
         (simple_metadata_t *)mmap_from_system(buffer_size);
@@ -109,25 +101,12 @@ void *first_fit_malloc(size_t size) {
     return first_fit_malloc(size);
   }
 
-  // |ptr| is the beginning of the allocated object.
-  //
-  // ... | metadata | object | ...
-  //     ^          ^
-  //     metadata   ptr
   void *ptr = metadata + 1;
   size_t remaining_size = metadata->size - size;
   metadata->size = size;
-  // Remove the free slot from the free list.
   remove_from_free_list(metadata, prev);
 
   if (remaining_size > sizeof(simple_metadata_t)) {
-    // Create a new metadata for the remaining free slot.
-    //
-    // ... | metadata | object | metadata | free slot | ...
-    //     ^          ^        ^
-    //     metadata   ptr      new_metadata
-    //                 <------><---------------------->
-    //                   size       remaining size
     simple_metadata_t *new_metadata = (simple_metadata_t *)((char *)ptr + size);
     new_metadata->size = remaining_size - sizeof(simple_metadata_t);
     new_metadata->next = NULL;
@@ -236,7 +215,7 @@ void *worst_fit_malloc(size_t size) {
     // Add the memory region to the free list.
     add_to_free_list(metadata);
     // Now, try simple_malloc() again. This should succeed.
-    return best_fit_malloc(size);
+    return worst_fit_malloc(size);
   }
 
   // |ptr| is the beginning of the allocated object.
