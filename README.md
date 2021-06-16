@@ -1,4 +1,9 @@
-# malloc_challenge
+# First-fit
 
-- `real_malloc` is the malloc challenge. Please read [real_malloc/README.md](./real_malloc/README.md) and [real_malloc/malloc.c](./real_malloc/malloc.c) for more information.
-- `visualizer/` contains a visualizer of malloc traces.
+| Challenge | Time | Utilization |
+| --------- | ---- | ----------- |
+|     1     | 7ms  |   70%       |
+|     2     | 7ms  |   40%       |
+|     3     | 132ms|  7%         |
+|     4     | 24359ms| 15%       |
+|     5     | 17415ms| 15%       |
