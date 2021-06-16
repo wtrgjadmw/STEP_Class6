@@ -84,6 +84,7 @@ void *first_fit_malloc(size_t size) {
   simple_metadata_t *prev = NULL;
   // First-fit: Find the first free slot the object fits.
   while (metadata && metadata->size < size) {
+    // printf("%lu\n", metadata->size);
     prev = metadata;
     metadata = metadata->next;
   }
@@ -137,15 +138,19 @@ void *first_fit_malloc(size_t size) {
 }
 
 void *best_fit_malloc(size_t size) {
-  simple_metadata_t *metadata = simple_heap.free_head;
+  simple_metadata_t *metadata = NULL;
   simple_metadata_t *prev = NULL;
   simple_metadata_t *metadata_now = simple_heap.free_head;
-  while (metadata_now->next) {
-    printf("%lu\n", metadata_now->next->size);
-    if (metadata_now->next->size > size && metadata_now->next->size < metadata->size) {
-      prev = metadata_now;
-      metadata = metadata_now->next;
+  simple_metadata_t *metadata_now_prev = NULL;
+  size_t min_size = 5000;
+  while (metadata_now) {
+    // printf("%lu\n", metadata_now->size);
+    if (metadata_now->size >= size && metadata_now->size < min_size) {
+      prev = metadata_now_prev;
+      metadata = metadata_now;
+      min_size = metadata_now->size;
     }
+    metadata_now_prev = metadata_now;
     metadata_now = metadata_now->next;
   }
 
@@ -198,7 +203,7 @@ void *best_fit_malloc(size_t size) {
 }
 
 void *my_malloc(size_t size) {
-  return first_fit_malloc(size);
+  return best_fit_malloc(size);
 }
 
 // This is called every time an object is freed.  You are not allowed to use
