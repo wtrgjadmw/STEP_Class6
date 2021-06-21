@@ -122,12 +122,17 @@ void *best_fit_malloc(size_t size) {
   simple_metadata_t *metadata_now = simple_heap.free_head;
   simple_metadata_t *metadata_now_prev = NULL;
   size_t min_size = 5000;
+  // ALEX_COMMENT:  the initialization above works because the max block size is less than 5000.
+  //                but if that changed one day, this would need to change, and that is easy to forget.
+  //                (maintainability is less than desirable).
+  //                to initialize with the size of the FIRST free block would be best.
   while (metadata_now) {
     // printf("%lu\n", metadata_now->size);
     if (metadata_now->size >= size && metadata_now->size < min_size) {
       prev = metadata_now_prev;
       metadata = metadata_now;
       min_size = metadata_now->size;
+      // ALEX_COMMENT:  are there cases where you can stop scanning?  (i.e., found a perfect size)
     }
     metadata_now_prev = metadata_now;
     metadata_now = metadata_now->next;
