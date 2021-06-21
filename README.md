@@ -22,6 +22,9 @@
 
 First-fitと比べると速度は落ちるが，メモリを効率よく分配できていることがわかる。最適な空き領域を選ぶ際に，全ての空き領域を見る必要があるためその分時間がかかってしまう。（時間量はO(N)）
 
+ALEX_COMMENT:  in order to avoid searching all every time, how about keeping the free-list always sorted?
+               maybe with that you could do binary-search instead?
+
 # Worst-fit
 
 | Challenge | Time | Utilization |
